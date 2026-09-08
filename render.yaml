@@ -1,0 +1,54 @@
+# Place this at the repo root, alongside Dockerfile.
+# Render calls this a "Blueprint" -- push it, then in the Render dashboard:
+# New -> Blueprint -> pick this repo -> it reads this file and creates
+# both the web service and the database for you.
+#
+# If you'd rather click through manually instead of using a Blueprint,
+# see the guide text for the equivalent manual steps.
+
+databases:
+  - name: clinic-ai-db
+    plan: free
+    databaseName: clinic_ai
+    user: clinic_ai
+
+services:
+  - type: web
+    name: clinic-ai-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      # "development" deliberately, not "production" -- see core/config.py's
+      # validate_for_production(): production mode refuses to start unless
+      # GBP_MOCK_MODE=false AND real Google OAuth credentials are set. For a
+      # mentor-review demo of the REST APIs, that's more setup than the goal
+      # needs. Switch this once you have real Google credentials and are
+      # ready to enforce the full production checklist.
+      - key: ENVIRONMENT
+        value: development
+      - key: DATABASE_URL
+        fromDatabase:
+          name: clinic-ai-db
+          property: connectionString
+      # Set this to a value YOU choose (not Render's auto-generated one) so
+      # you can pre-generate a demo Bearer token before deploying and hand
+      # it to your mentor directly -- see the guide for the exact command.
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GBP_MOCK_MODE
+        value: "true"
+      - key: ALLOW_THIRD_PARTY_LLM_FOR_PHI
+        value: "false"
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false  # set manually in the Render dashboard -- never commit this
+      # "*" is fine for a temporary demo since your mentor will most likely
+      # hit /docs directly (same-origin, CORS doesn't apply) rather than a
+      # separate frontend calling this API cross-origin. Tighten this to an
+      # explicit origin list before any real frontend depends on it.
+      - key: CORS_ALLOWED_ORIGINS
+        value: "*"
