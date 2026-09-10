@@ -1,3 +1,4 @@
+import os
 import logging
 from contextlib import asynccontextmanager
 
@@ -49,6 +50,18 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.get("/debug/config")
+def debug_config():
+    return {
+        "environment": os.getenv("ENVIRONMENT"),
+        "llm_provider": os.getenv("LLM_PROVIDER"),
+        "phi_llm_allowed": os.getenv("ALLOW_THIRD_PARTY_LLM_FOR_PHI"),
+        "jwt_secret_loaded": bool(os.getenv("JWT_SECRET_KEY")),
+        "groq_api_key_loaded": bool(os.getenv("GROQ_API_KEY")),
+        "database_url_loaded": bool(os.getenv("DATABASE_URL")),
+    }
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
